@@ -2,15 +2,33 @@
     <head>
             <meta name="viewport" content="initial-scale=1.0, width=device-width" />
             <meta charset="UTF-8" />
-        
-    </head>
-    <body>
-        <div id="map" ></div>
-        <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+             <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
         <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
         <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"type="text/javascript" charset="utf-8"></script>
-        <script>
-           
+       
+    </head>
+    <body>
+        <div id="map" style="width: 800px; height: 600px; position: absolute;" ></div>
+        <div id="info" style="width: 500px; height: 600px; border: 3px black solid;  float: right; ">
+        
+        <h4>Direccion:</h4>
+        <input type="text">
+        <br>
+        <h4>coordenadas:</h4>
+        <input type="text">
+        <br>
+        <h4>Info de la ubicacion</h4>
+        <ul>
+            <li></li>
+            <li></li>
+            <li></li>
+            <li></li>
+            
+        </ul>
+
+        
+        </div>
+  <script>          
             const platform = new H.service.Platform({ 
                 "apikey": "",
                 "app_id" : "",
@@ -90,6 +108,9 @@ const start = async() =>{
         pointer = ev.currentPointer;
     if (target instanceof H.map.Marker) {
       target.setGeometry(map.screenToGeo(pointer.viewportX - target['offset'].x, pointer.viewportY - target['offset'].y));
+      target.s
+      console.log(target);//imprime las coordenadas del cursor en movimiento
+      
     }
   }, false);
     }
@@ -109,13 +130,15 @@ addDraggableMarker(map, behavior); //añadimos la funcion para que el marcador s
 
     
 
-        const reverseGeocode = coords =>{ //se crea una variable de geocodigo en reversa 
+        const reverseGeocode = coords =>{
             return new Promise((resolve, reject) =>{
+           
                 geocoder.reverseGeocode(
+                   
                     {
-                        prox : coords.Latitude + "," + coords.Longitude, // se le pasan latitud y longitud para su conversion
+                        prox : coords.Latitude + "," + coords.Longitude,
                         mode : "retrieveAddresses",
-                        maxresults: 1 // se asigna solo 1 resultado para evitar choques con mas direcciones
+                        maxresults: 1
                     },
                     success=>{
                         resolve(success);
@@ -124,9 +147,11 @@ addDraggableMarker(map, behavior); //añadimos la funcion para que el marcador s
                         reject(error);
                     }
                 );
+             
             });
+            
         }
-const location = await reverseGeocode({ Latitude: 4.61496, Longitude: -74.06941});
+var location = await reverseGeocode({ Latitude: 4.61496, Longitude: -74.06941});
 console.log(location);
 
 }

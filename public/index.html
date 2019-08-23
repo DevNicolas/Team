@@ -1,0 +1,100 @@
+<html lang="es">
+    <head>
+            <meta name="viewport" content="initial-scale=1.0, width=device-width" />
+            <meta charset="UTF-8" />
+        
+    </head>
+    <body>
+        <div id="map" style="width: 800px; height: 600px"></div>
+        <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" type="text/javascript" charset="utf-8"></script>
+        <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" type="text/javascript" charset="utf-8"></script>
+        <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"type="text/javascript" charset="utf-8"></script>
+        <script>
+           
+            const platform = new H.service.Platform({ 
+                "apikey": "GC5cgevB0asxbMKe-8ZEYPpAzYbfZO-G-fshPsPB4Wo",
+                "app_id" : "BoQIQN3uxK92Db8ybn4I",
+                "app_code" : "PmkNkJZM_D7Zg9IL_pmzPw"
+});// se conecta al servicio de here mediante la apikey unica
+
+
+           // Obtain the default map types from the platform object:
+var defaultLayers = platform.createDefaultLayers();
+const start = async() =>{
+    var map = new H.Map(
+  document.getElementById('map'),//se genera el mapa utilizando la libreria de here
+  defaultLayers.vector.normal.map,
+  {
+    zoom: 11, //se añade zoom
+    center: { lat: 4.61496, lng: -74.06941 } //se añade donde queremos que inicie el mapa
+  });
+   
+   var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map)); //añade zoom y que se pueda mover el mapa
+   
+    /*var marker = new H.map.Marker({lat : 52.5, lng: 13.4 });//genera un punto en el mapa segun las coordenadas
+    map.addObject(marker);//se añade al mapa*/
+
+    var geocoder = platform.getGeocodingService();//se inicia el servicio de geocoding
+    var group = new H.map.Group();
+
+group.addEventListener('tap', function (evt) {
+  map.setCenter(evt.target.getPosition());
+  openBubble(
+     evt.target.getPosition(), evt.target.getData());
+}, false);
+map.addObject(group);
+    var geo =  query =>{
+        geocoder.geocode(
+            {
+                "searchtext": query
+            },
+            success=>{
+            var locations = success.Response.View[0].Result[0].Location.DisplayPosition;
+                console.log(locations);
+        for (i = 0; i < locations.length; i++){
+            var marker = new H.map.Marker(
+                {
+                    lat : locations[i].Location.DisplayPosition.Latitude, //obtenemos latitud  
+                    lng : locations[i].Location.DisplayPosition.Longitude //obtenemos longitud
+                }
+            );
+            marker.setData(locations[i].Location.Address.Label);
+            group.addObject(marker);
+        }
+            },
+            error =>{
+                console.error(error);
+            }
+        );
+        }
+        geo("Fresno, CA"); // se genera un query global para busquedas
+
+
+
+
+        const reverseGeocode = coords =>{
+            return new Promise((resolve, reject) =>{
+                geocoder.reverseGeocode(
+                    {
+                        prox : coords.Latitude + "," + coords.Longitude,
+                        mode : "retrieveAddresses",
+                        maxresults: 1
+                    },
+                    success=>{
+                        resolve(success);
+                    },
+                    reject=>{
+                        reject(error);
+                    }
+                );
+            });
+        }
+const location = await reverseGeocode({ Latitude: 4.61496, Longitude: -74.06941});
+console.log(location);
+
+}
+start();
+      
+        </script>
+    </body>
+</html>

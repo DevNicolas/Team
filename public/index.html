@@ -15,11 +15,11 @@
   <div id="panel" style="position:absolute; width:49%; left:51%; height:100%; background:inherit" ></div>
 
   <script  type="text/javascript" charset="UTF-8" >
-    
+    var posicion = [];
   var AUTOCOMPLETION_URL = 'https://autocomplete.geocoder.api.here.com/6.2/suggest.json',
     ajaxRequest = new XMLHttpRequest(),
     query = '';
-   
+  
 
 /**
  * If the text in the text box  has changed, and is not empty,
@@ -66,7 +66,7 @@ function onAutoCompleteSuccess() {
   clearOldSuggestions();
   addSuggestionsToPanel(this.response);  // In this context, 'this' means the XMLHttpRequest itself.
   addSuggestionsToMap(this.response);
-  addmarker(this.marker);
+ 
 }
 
 
@@ -123,6 +123,7 @@ var map = new H.Map(mapContainer,
 });
 
  map.addObject(group);
+
 
 //Step 3: make the map interactive
 // MapEvents enables the event system
@@ -188,6 +189,7 @@ function addSuggestionsToMap(response){
           lat : locations[i].Location.DisplayPosition.Latitude,
           lng : locations[i].Location.DisplayPosition.Longitude,
           volatility : true
+          
         });
         marker.draggable = true;
         marker.setData(locations[i].Location.Address.Label);
@@ -220,18 +222,21 @@ function addSuggestionsToMap(response){
     if (target instanceof H.map.Marker) {
       target.setGeometry(map.screenToGeo(pointer.viewportX - target['offset'].x, pointer.viewportY - target['offset'].y));
       target.s
-      
-      console.log(marker); //imprime las coordenadas del punto que se mueve
+      posicion = marker
+      console.log(posicion); //imprime las coordenadas del punto que se mueve
     }
   }, false);
 
+ 
  
     }
 
 
 // Add the click event listener.
 addDraggableMarker(map, behavior);
+
       }
+    
     
       
       map.setViewBounds(group.getBounds());
@@ -267,21 +272,8 @@ addDraggableMarker(map, behavior);
       );
     }
 
-    function reverseGeocode(platform) {
-  var geocoder = platform.getGeocodingService(),
-    parameters = {
-      prox: 'Latitude, Longitude',
-      mode: 'retrieveAddresses',
-      maxresults: '1',
-      gen: '9'};
+ 
 
-  geocoder.reverseGeocode(parameters,
-    function (result) {
-      alert(result);
-    }, function (error) {
-      alert(error);
-    });
-}
 
   /* 
    * Loop through all the geocoding suggestions and make a request to the geocoder service
@@ -292,6 +284,8 @@ addDraggableMarker(map, behavior);
     geocodeByLocationId(item.locationId);
  
   });
+
+
 }
 
 
@@ -316,11 +310,15 @@ function addSuggestionsToPanel(response){
 
 }
 
-function addmarker(marker){
-    var all = document.getElementById('all');
-    all.innerHTML = JSON.stringify(marker, null, ' ');
-    console.log(marker);
-    }
+function addmarker(posicion){
+   var all = document.getElementById('all');
+   all.innerHTML = JSON.stringify(this.posicion[Object]);
+   console.log(this.posicion)
+
+}
+
+
+
 
 
 

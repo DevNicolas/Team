@@ -15,35 +15,23 @@
   <div id="panel" style="position:absolute; width:49%; left:51%; height:100%; background:inherit" ></div>
 
   <script  type="text/javascript" charset="UTF-8" >
-    var posicion = [];
+    var posicion = '';
   var AUTOCOMPLETION_URL = 'https://autocomplete.geocoder.api.here.com/6.2/suggest.json',
     ajaxRequest = new XMLHttpRequest(),
     query = '';
   
-
-/**
- * If the text in the text box  has changed, and is not empty,
- * send a geocoding auto-completion request to the server.
- *
- * @param {Object} textBox the textBox DOM object linked to this event
- * @param {Object} event the DOM event which fired this listener
- */
+// funcion para autocompletado, que recibe un evento y un campo de texto del html
 function autoCompleteListener(textBox, event) {
 
   if (query != textBox.value){
     if (textBox.value.length >= 1){
 
-      /**
-      * A full list of available request parameters can be found in the Geocoder Autocompletion
-      * API documentation.
-      *
-      */
       var params = '?' +
-        'query=' +  encodeURIComponent(textBox.value) +   // The search text which is the basis of the query
-        '&beginHighlight=' + encodeURIComponent('<mark>') + //  Mark the beginning of the match in a token. 
-        '&endHighlight=' + encodeURIComponent('</mark>') + //  Mark the end of the match in a token. 
-        '&maxresults=1' +  // The upper limit the for number of suggestions to be included 
-                          // in the response.  Default is set to 5.
+        'query=' +  encodeURIComponent(textBox.value) +   // esto nos permite concatenar lo que usuario busca
+        '&beginHighlight=' + encodeURIComponent('<mark>') + //  Mark al inicio de la busqueda
+        '&endHighlight=' + encodeURIComponent('</mark>') + //  Mark al final de la busqueda
+        '&maxresults=1' +  // se genera el maximo de resultados que se quieren mostrar
+                       
         '&app_id=' + APPLICATION_ID +
         '&app_code=' + APPLICATION_CODE;
       ajaxRequest.open('GET', AUTOCOMPLETION_URL + params );
@@ -55,45 +43,42 @@ function autoCompleteListener(textBox, event) {
 
 
 /**
- *  This is the event listener which processes the XMLHttpRequest response returned from the server.
+ *  esta funcion actua esperando la respuesta del servidor
  */
 function onAutoCompleteSuccess() {
- /*
-  * The styling of the suggestions response on the map is entirely under the developer's control.
-  * A representitive styling can be found the full JS + HTML code of this example
-  * in the functions below:
-  */
+
   clearOldSuggestions();
-  addSuggestionsToPanel(this.response);  // In this context, 'this' means the XMLHttpRequest itself.
+  addSuggestionsToPanel(this.response);  // se usa la palabra reservada this haciendo referencia a la peticion 
   addSuggestionsToMap(this.response);
- 
+  addmarker(posicion)
 }
 
 
 /**
- * This function will be called if a communication error occurs during the XMLHttpRequest
+ * funcion para cargar error en la comunicacion de peticiones
  */
 function onAutoCompleteFailed() {
   alert('Ooops!');
 }
 
-// Attach the event listeners to the XMLHttpRequest object
+// se hace la conexion entre funciones y las peticiones
 ajaxRequest.addEventListener("load", onAutoCompleteSuccess);
 ajaxRequest.addEventListener("error", onAutoCompleteFailed);
+ajaxRequest.addEventListener("load",addmarker)
 ajaxRequest.responseType = "json";
 
 
 /**
- * Boilerplate map initialization code starts below:
+ * codigo relacionado al mapa (interaccion, informacion)
  */
 
 
-// set up containers for the map  + panel
-var mapContainer = document.getElementById('map'),
-  suggestionsContainer = document.getElementById('panel');
+// se crean los contenedores de informacion
+var mapContainer = document.getElementById('map'), //contenedor del mapa
+  suggestionsContainer = document.getElementById('panel');//contenedor de la informacion
 
 
-//Step 1: initialize communication with the platform
+//Step 1: se inicia la comunicacion con el mapa con las credenciales
 var APPLICATION_ID = '',
   APPLICATION_CODE = '';
 
@@ -115,37 +100,34 @@ group.addEventListener('tap', function (evt) {
 }, false);
 
 
-//Step 2: initialize a map - this map is centered over Europe
+//Step 2: se inicia el servicio del mapa y se añaden las coordenadas donde se quiere iniciar 
 var map = new H.Map(mapContainer,
   defaultLayers.normal.map,{
-  center: {lat:4.6482837, lng:-74.10},
+  center: {lat:4.6482837, lng:-74.10}, //Bogota
   zoom: 11
 });
 
  map.addObject(group);
 
 
-//Step 3: make the map interactive
+//se hace el mapa interactivo
 // MapEvents enables the event system
-// Behavior implements default interactions for pan/zoom (also on mobile touch environments)
+// se añade comportamiento al mapa (zoom, moverse)
 var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 
-// Create the default UI components
 var ui = H.ui.UI.createDefault(map, defaultLayers);
 
-// Hold a reference to any infobubble opened
 var bubble;
 
 /**
- * Function to Open/Close an infobubble on the map.
- * @param  {H.geo.Point} position     The location on the map.
- * @param  {String} text              The contents of the infobubble.
+ * Funcion para abrir o cerrar la brubuja de informacion del mapa
+ * @param  {H.geo.Point} position     la ubicacion en el mapa
+ * @param  {String} text              el contenido de la informacion de la burbuja
  */
 function openBubble(position, text){
  if(!bubble){
     bubble =  new H.ui.InfoBubble(
       position,
-      // The FO property holds the province name.
       {content: '<small>' + text+ '</small>'});
     ui.addBubble(bubble);
   } else {
@@ -157,24 +139,12 @@ function openBubble(position, text){
 
 
 /**
- * The Geocoder Autocomplete API response retrieves a complete addresses and a `locationId`.
- * for each suggestion.
- *
- * You can subsequently use the Geocoder API to geocode the address based on the ID and 
- * thus obtain the geographic coordinates of the address.
- *
- * For demonstration purposes only, this function makes a geocoding request
- * for every `locationId` found in the array of suggestions and displays it on the map.
- * 
- * A more typical use-case would only make a single geocoding request - for example
- * when the user has selected a single suggestion from a list.
- *
  * @param {Object} response
  */
 function addSuggestionsToMap(response){
   /**
-   * This function will be called once the Geocoder REST API provides a response
-   * @param  {Object} result          A JSONP object representing the  location(s) found.
+   * esta funcion llamara al geocoding para obtener una respuesta
+   * @param  {Object} result          un objeto de caracter json sera generado
    */
   var onGeocodeSuccess = function (result) {
     
@@ -182,7 +152,7 @@ function addSuggestionsToMap(response){
       locations = result.Response.View[0].Result,
       i;
 
-      // Add a marker for each location found
+      // por cada location genera un marcador (depende del maximo resultados generados)
       for (i = 0; i < locations.length; i++) {
         function addDraggableMarker(map, behavior){
         marker = new H.map.Marker({
@@ -205,8 +175,7 @@ function addSuggestionsToMap(response){
   }, false);
 
 
-  // re-enable the default draggability of the underlying map
-  // when dragging has completed
+// evento para hacer el marcador movible
   map.addEventListener('dragend', function(ev) {
     var target = ev.target;
     if (target instanceof H.map.Marker) {
@@ -214,16 +183,15 @@ function addSuggestionsToMap(response){
     }
   }, false);
 
-  // Listen to the drag event and move the position of the marker
-  // as necessary
+ // evento para obtener coordenadas segun el movimiento del marcador
    map.addEventListener('drag', function(ev) {
     var target = ev.target,
         pointer = ev.currentPointer;
     if (target instanceof H.map.Marker) {
       target.setGeometry(map.screenToGeo(pointer.viewportX - target['offset'].x, pointer.viewportY - target['offset'].y));
       target.s
-      posicion = marker
-      console.log(posicion); //imprime las coordenadas del punto que se mueve
+      posicion = marker // se le pasan las propiedades del marcador a la variable global posicion para usarla en una funcion
+      addmarker(posicion)// se añado a la funcion la posicion con las propiedades de marcador (latitud, longitud)
     }
   }, false);
 
@@ -245,20 +213,17 @@ addDraggableMarker(map, behavior);
       }
     },
     /**
-     * This function will be called if a communication error occurs during the JSON-P request
-     * @param  {Object} error  The error message received.
+     * Esta funcion es creada para avisar del algun error ocurrido en la peticion del JSON
+     * @param  {Object} error  La variable global recibe el error
      */
     onGeocodeError = function (error) {
       alert('Ooops!');
     },
      /**
-     * This function uses the geocoder service to calculate and display information
-     * about a location based on its unique `locationId`.
+       Esta funcion usa el servicio de geocoding para calcular
+       y mostrar la informacion acerca de un lugar basado en su unico 'LocationId'
      *
-     * A full list of available request parameters can be found in the Geocoder API documentation.
-     * see: http://developer.here.com/rest-apis/documentation/geocoder/topics/resource-search.html
-     *
-     * @param {string} locationId     The id assigned to a given location
+     * @param {string} locationId     este id es el asignado al lugar
      */
     geocodeByLocationId = function (locationId) {
       geocodingParameters = {
@@ -272,16 +237,10 @@ addDraggableMarker(map, behavior);
       );
     }
 
- 
-
-
-  /* 
-   * Loop through all the geocoding suggestions and make a request to the geocoder service
-   * to find out more information about them.
-   */
 
   response.suggestions.forEach(function (item, index, array) {
     geocodeByLocationId(item.locationId);
+  
  
   });
 
@@ -290,7 +249,7 @@ addDraggableMarker(map, behavior);
 
 
 /**
- * Removes all H.map.Marker points from the map and adds closes the info bubble
+ * Esta funcion remueve todas las sugerencias del mapa cuando el usuario borra
  */
 function clearOldSuggestions(){
    group.removeAll ();
@@ -300,20 +259,23 @@ function clearOldSuggestions(){
 }
 
 /**
- * Format the geocoding autocompletion repsonse object's data for display
+ * Muestra en un objeto la informacion obtenida del JSON 
  *
  * @param {Object} response
  */
 function addSuggestionsToPanel(response){
-   var suggestions = document.getElementById('suggestions');
-   suggestions.innerHTML = JSON.stringify(response, null, ' ');
+   var suggestions = document.getElementById('suggestions'); //creamos un campo suggestions en el html
+   suggestions.innerHTML = JSON.stringify(response, null, ' ');// en ese espacio pasamos el json a un objeto en un string
+   
 
 }
 
 function addmarker(posicion){
    var all = document.getElementById('all');
-   all.innerHTML = JSON.stringify(this.posicion[Object]);
-   console.log(this.posicion)
+   all.innerHTML = JSON.stringify(posicion.b, null, '');
+  
+
+
 
 }
 

@@ -1,1 +1,1 @@
-Team
+API que utiliza las librerias de HERE para geocodificar y geocodificar a la inversa lugares o coordenadas, mapa interactivo con marcador movible que permite navegar a travez del mapa y obtener informacion como: Latitud, Longitud, Idioma hablado, Codigo del pais, Un locationId unico por ubicacion, Pais y ciudad o estado, en algunas ciudades es posible obtener el codigo postal.

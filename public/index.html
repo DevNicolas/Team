@@ -11,11 +11,12 @@
 </head>
 <body>
 
-  <div id="map" style="position:absolute; width:49%; height:100%; background:grey" ></div>
-  <div id="panel" style="position:absolute; width:49%; left:51%; height:100%; background:inherit" ></div>
+  <div id="map" style="position:absolute; width:49%; height:100%; " ></div>
+  <div id="panel" style="position:absolute; width:49%; left:51%; height:100%; background: white" ></div>
 
   <script  type="text/javascript" charset="UTF-8" >
     var posicion = '';
+    var info = '';
   var AUTOCOMPLETION_URL = 'https://autocomplete.geocoder.api.here.com/6.2/suggest.json',
     ajaxRequest = new XMLHttpRequest(),
     query = '';
@@ -50,9 +51,8 @@ function onAutoCompleteSuccess() {
   clearOldSuggestions();
   addSuggestionsToPanel(this.response);  // se usa la palabra reservada this haciendo referencia a la peticion 
   addSuggestionsToMap(this.response);
-  addmarker(posicion)
-}
 
+}
 
 /**
  * funcion para cargar error en la comunicacion de peticiones
@@ -64,7 +64,8 @@ function onAutoCompleteFailed() {
 // se hace la conexion entre funciones y las peticiones
 ajaxRequest.addEventListener("load", onAutoCompleteSuccess);
 ajaxRequest.addEventListener("error", onAutoCompleteFailed);
-ajaxRequest.addEventListener("load",addmarker)
+ajaxRequest.addEventListener("load",addmarker);
+ajaxRequest.addEventListener("load",revertir);
 ajaxRequest.responseType = "json";
 
 
@@ -76,6 +77,7 @@ ajaxRequest.responseType = "json";
 // se crean los contenedores de informacion
 var mapContainer = document.getElementById('map'), //contenedor del mapa
   suggestionsContainer = document.getElementById('panel');//contenedor de la informacion
+
 
 
 //Step 1: se inicia la comunicacion con el mapa con las credenciales
@@ -90,7 +92,7 @@ var platform = new H.service.Platform({
 });
 var defaultLayers = platform.createDefaultLayers();
 var geocoder = platform.getGeocodingService();
-var reversegeocoder = platform.getGeocodingService();
+
 var group = new H.map.Group();
 
 group.addEventListener('tap', function (evt) {
@@ -141,6 +143,7 @@ function openBubble(position, text){
 /**
  * @param {Object} response
  */
+
 function addSuggestionsToMap(response){
   /**
    * esta funcion llamara al geocoding para obtener una respuesta
@@ -190,16 +193,44 @@ function addSuggestionsToMap(response){
     if (target instanceof H.map.Marker) {
       target.setGeometry(map.screenToGeo(pointer.viewportX - target['offset'].x, pointer.viewportY - target['offset'].y));
       target.s
-      posicion = marker // se le pasan las propiedades del marcador a la variable global posicion para usarla en una funcion
-      addmarker(posicion)// se añado a la funcion la posicion con las propiedades de marcador (latitud, longitud)
+      posicion = marker; // se le pasan las propiedades del marcador a la variable global posicion para usarla en una funcion
+      addmarker(posicion);// se añado a la funcion la posicion con las propiedades de marcador (latitud, longitud)
+
+      var coords = posicion;
+  var start = async() =>{
+  var reverseGeocoder = coords =>{
+            return new Promise((resolve,reject)=>{
+                geocoder.reverseGeocode({
+                prox : coords.lat + "," + coords.lng,
+                mode: 'retrieveAddresses',
+      maxresults: '1',
+      jsonattributes : 1
+
+            },success =>{
+                resolve(success);
+                
+            }, error =>{
+              reject(error);
+            }
+            );
+            });
+            
+           
+        }
+
+        var info = await reverseGeocoder({lat : coords.b.lat, lng :coords.b.lng});
+          revertir(info);
+  }
+ start(); 
+ 
+
     }
+   
   }, false);
-
- 
  
     }
 
-
+    
 // Add the click event listener.
 addDraggableMarker(map, behavior);
 
@@ -211,7 +242,9 @@ addDraggableMarker(map, behavior);
       if(group.getObjects().length < 2){
         map.setZoom(15);
       }
+     
     },
+    
     /**
      * Esta funcion es creada para avisar del algun error ocurrido en la peticion del JSON
      * @param  {Object} error  La variable global recibe el error
@@ -219,6 +252,7 @@ addDraggableMarker(map, behavior);
     onGeocodeError = function (error) {
       alert('Ooops!');
     },
+
      /**
        Esta funcion usa el servicio de geocoding para calcular
        y mostrar la informacion acerca de un lugar basado en su unico 'LocationId'
@@ -227,7 +261,8 @@ addDraggableMarker(map, behavior);
      */
     geocodeByLocationId = function (locationId) {
       geocodingParameters = {
-        locationId : locationId
+        locationId : locationId,
+
      };
 
       geocoder.geocode(
@@ -235,15 +270,14 @@ addDraggableMarker(map, behavior);
         onGeocodeSuccess,
         onGeocodeError
       );
+
     }
-
-
-  response.suggestions.forEach(function (item, index, array) {
-    geocodeByLocationId(item.locationId);
   
- 
-  });
+  
+response.suggestions.forEach(function (item, index, array) {
+    geocodeByLocationId(item.locationId);
 
+  });
 
 }
 
@@ -266,35 +300,33 @@ function clearOldSuggestions(){
 function addSuggestionsToPanel(response){
    var suggestions = document.getElementById('suggestions'); //creamos un campo suggestions en el html
    suggestions.innerHTML = JSON.stringify(response, null, ' ');// en ese espacio pasamos el json a un objeto en un string
-   
-
 }
 
 function addmarker(posicion){
    var all = document.getElementById('all');
    all.innerHTML = JSON.stringify(posicion.b, null, '');
-  
-
 
 
 }
 
+function revertir(info){
+  var ad = document.getElementById('ad');
+  ad.innerHTML = JSON.stringify(info.response.view[0].result[0].location.address,null, '');
+  
+}
 
-
-
-
-
- var content =  '<strong style="font-size: large;">' + 'Ingresa tu direccion'  + '</strong></br>';
+ var content =  '<strong style="font-size: large;">' + 'Ingresa tu direccion o lugar'  + '</strong></br>';
 
   content  += '<br/><input type="text" id="auto-complete" style="margin-left:5%; margin-right:5%; min-width:90%"  onkeyup="return autoCompleteListener(this, event);"><br/>';
   content  += '<br/><strong>Informacion de la ubicacion:</strong><br/>';
-  content  += '<div style="margin-left:5%; margin-right:5%;"><pre style="max-height:235px"><code  id="suggestions" style="font-size: small;">' +'{}' + '</code></pre></div>';
-  content  += '<br/><strong>Informacion del marcador:</strong><br/>';
-  content  += '<div style="margin-left:5%; margin-right:5%;"><pre style="max-height:235px"><code  id="all" style="font-size: small;">' +'{}' + '</code></pre></div>';
-
+  content  += '<div style="margin-left:5%; margin-right:5%;"><pre style="max-height:235px"><code  id="suggestions" style="font-size: small;">' +'' + '</code></pre></div>';
+  content  += '<br/><br/>';
+  content  += '<br/><strong>Informacion del marcador en el mapa:</strong><br/>';
+  content  += '<div style="margin-left:5%; margin-right:5%;"><pre style="max-height:235px"><code  id="all" style="font-size: small;">'  + '</code></pre></div>';
+  content  += '<div style="margin-left:5%; margin-right:5%;"><pre style="max-height:235px"><code  id="ad" style="font-size: small;">' +'' + '</code></pre></div>';
 
   suggestionsContainer.innerHTML = content;
-  
+ 
   </script>
 </body>
 </html>
